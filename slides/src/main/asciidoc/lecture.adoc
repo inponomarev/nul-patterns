@@ -1,0 +1,1116 @@
+= Object-Oriented Design Patterns
+NU London
+:revealjs_theme: black
+:revealjs_customtheme: white_course.css
+:revealjs_slideNumber:
+:revealjs_history:
+:revealjs_progress:
+:encoding: UTF-8
+:lang: ru
+include::_doc_general_attributes.adoc[]
+:doctype: article
+:toclevels: 3
+:imagesdir: images
+:source-highlighter: highlightjs
+:highlightjsdir: highlight
+:icons: font
+:iconfont-remote!:
+:iconfont-name: font-awesome-4.7.0/css/font-awesome
+:revealjs_mouseWheel: true
+:revealjs_center: false
+:revealjs_transition: none
+:revealjs_width: 1600
+:revealjs_height: 900
+:stem: latexmath
+
+
+:!figure-caption:
+
+== Why do we need design patterns?
+
+* We're facing the same problems over and over again while designing the software
+* There are "standard" good solutions used in numerous projects
+* These solutions have specific names which makes communication easier +
+(e.g. "_I used Delegate pattern in order to get the value for this property_")
+
+== The Classical Book
+
+[cols="30a,70a"]
+|===
+|image::gof.jpg[]
+|
+
+* *Erich Gamma et al.*, Design Patterns: Elements of Reusable Object-Oriented Software
+* Published in 1994
+* A classical book on software design (although partially outdated)
+* Patterns from this book are referred to as _GoF patterns_ ("Gang of Four" is 4 authors of this book).
+|===
+
+== Some other sources
+
+Free online references (mostly GoF patterns reiterated):
+
+* https://www.oodesign.com/
+* https://refactoring.guru/design-patterns
+* *Wikipedia* has an extensive list and a dedicated article on most of design patterns (https://en.wikipedia.org/wiki/Software_design_pattern)
+
+== Types of design patterns
+
+* *Creational patterns*  -- various object creation mechanisms, which increase flexibility and reuse of existing code
+* *Structural patterns* -- focus on how to assemble objects and classes into larger structures, while keeping these structures flexible and efficient.
+* *Behavioural patterns* -- concerned with algorithms and the assignment of responsibilities between objects.
+
+== What we will cover
+
+* In total, there are about 30 design patterns, but not all of them are equally frequently used.
+* *Singleton* GoF design pattern is now considered to be an *antipattern* because of its difficulty to test. Currently, superceded by Dependency Injection frameworks (e.g. Spring in Java).
+* We will cover only some basic patterns and those that will be useful for your homework assignment.
+
+== Superobject antipattern
+
+[graphviz]
+----
+digraph G {
+  graph [ dpi = 200 ];
+  node[shape=circle]
+  A[label="One Huge\nSuperobject\nto Rule Them All"];
+}
+----
+
+== Composite: Divide and conquer!
+
+A tree of objects: a hierarchy of objects with distributed responsibilities
+
+[graphviz]
+----
+digraph G {
+  graph [ dpi = 180 ];
+  node[shape=circle;label=""]
+  a1->a2;
+  a1->a3;
+  a1->a4;
+  a2->a21;
+  a2->a22;
+  a4->a41;
+  a4->a42;
+  a4->a43;
+  a43->a431;
+  a43->a432;
+}
+----
+
+== Composite: Divide and conquer!
+
+A directed acyclic graph  (DAG) of objects: more generic case!
+
+[graphviz]
+----
+digraph G {
+  graph [ dpi = 180 ];
+  node[shape=circle;label=""]
+  a1->a2;
+  a1->a3;
+  a1->a4;
+  a2->a43;
+  a2->a21;
+  a2->a22;
+  a21->a431;
+  a4->a41;
+  a4->a42;
+  a4->a43;
+  a43->a431;
+  a43->a432;
+}
+----
+
+== A classic example
+
+Imagine we need to draw the following picture (a UML use case diagram):
+
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+actor Actor
+usecase UC1
+
+Actor --> UC1
+note on link
+  arrow
+end note
+
+note left of Actor : actor
+note left of UC1 : use case
+
+@enduml
+----
+
+We need classes `Actor`, `UseCase` and `Arrow`, +
+and have to make them to be the components of `Diagram`
+
+== A classic example
+
+[cols="50a,50a"]
+|===
+^|
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+actor Actor
+usecase UC1
+
+Actor --> UC1
+note on link
+  arrow
+end note
+
+note left of Actor : actor
+note left of UC1 : use case
+
+@enduml
+----
+
+^|
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+object Actor
+object Arrow
+object UseCase
+object Diagram
+
+Diagram --> Actor
+Diagram --> UseCase
+Diagram --> Arrow
+
+Arrow --> UseCase: to
+Arrow --> Actor: from
+@enduml
+----
+|===
+
+
+== `Draw` method of a diagram
+
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+interface Element {
+  List<Element> elements
+  draw()
+}
+class Diagram
+class Actor
+class UseCase
+class Arrow
+
+Element <|-- Diagram
+Element <|-- Actor
+Element <|-- UseCase
+Element <|-- Arrow
+@enduml
+----
+
+[source,java]
+----
+class Diagram implements Element {
+    void draw() {
+        for (Element e: elements) {
+            e.draw();
+        }
+    }
+}
+----
+
+
+
+
+
+== A generic decomposition of a typical application
+
+A generic "layered" architecture of a typical Java application
+
+[plantuml, layers, png]
+----
+@startuml
+skinparam dpi 180
+object Controller1
+object Controller2
+
+note left of Controller2 : Controller layer
+
+object Service1
+object Service2
+object Service3
+
+object Dao1
+object Dao2
+object Dao3
+
+Controller1 --> Service1
+Controller1 --> Service2
+Controller2 --> Service2
+Controller2 --> Service1
+Controller2 --> Service3
+note on link
+  "Wiring"
+end note
+
+Service1 --> Dao1
+
+Service2 --> Dao1
+note on link
+  "Wiring"
+end note
+
+Service3 --> Dao2
+Service3 --> Dao3
+note left of Service3: Service layer
+Service1 --> Dao2
+note left of Dao3: Data Access Objects layer
+
+@enduml
+----
+
+== Your own application from Project 1 & 2
+
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+object Controller
+object ImageEditor
+object Image
+Controller->ImageEditor
+ImageEditor->Image
+@enduml
+----
+
+== Composite takeaways
+
+1. Avoid creating huge "superobjects"
+2. Remember: Divide and conquer!
+3. When your components implement the same interface, you can command them to do perform the same action at once (e. g. "draw me a diagram").
+
+== Now let's consider the following example
+
+[plantuml,png]
+----
+@startuml
+skinparam dpi 180
+object A
+object B
+object C
+object D
+
+A-->B
+A-->C
+B-->D
+C-->D
+@enduml
+----
+
+== A naïve approach: "Let the objects create what they need themselves"
+
+[cols="30a,70a"]
+|===
+^|
+[plantuml,png]
+----
+@startuml
+skinparam dpi 180
+object A
+object B
+object C
+object D
+
+A-->B
+A-->C
+B-->D
+C-->D
+@enduml
+----
+
+|
+
+[source,java]
+----
+public class A {
+  private final B b = new B();
+  private final C c = new C();
+}
+
+public class B {
+  private final D d = new D();
+}
+
+public class C {
+  private final D d = ???; //OOPS!
+}
+----
+
+It is impossible to make a single instance of `D` +
+shared between `B` and `C`!
+
+
+|===
+== How do we test?
+
+
+[cols="30a,70a"]
+|===
+^|
+[plantuml,png]
+----
+@startuml
+skinparam dpi 180
+object A
+object B
+object C
+object D
+
+A-->B
+A-->C
+B-->D
+C-->D
+@enduml
+----
+
+|
+* If `A` creates `B` and `C`, how can we test `A` separately?
+* How do we substitute `B` and `C` with mock implementations?
+* This is impossible if we do it like this:
+
+[source,java]
+----
+public class A {
+  private final B b = new B(...);
+  private final C c = new C(...);
+}
+----
+
+|===
+
+== Let's make external dependencies "pluggable"
+
+[cols="30a,70a"]
+|===
+^|
+[plantuml,png]
+----
+@startuml
+skinparam dpi 180
+object A
+object B
+object C
+object D
+
+A-->B
+A-->C
+B-->D
+C-->D
+@enduml
+----
+
+|
+
+[source,java]
+----
+class A {
+  private final B b;
+  private final C C;
+  public A(B b, C c) {
+      this.b = b;
+      this.c = c; }}
+
+class B {
+    private final D d;
+    public B(D d){
+        this.d = d; }}
+
+class C {
+    private final D d;
+    public C(D d){
+        this.d = d; }}
+----
+|===
+
+== Now testing is possible!
+
+[source,java]
+----
+class ATest {
+    //Use mocks instead of "real" dependencies
+    A objectUnderTest = new A(
+            Mockito.mock(B.class),
+            Mockito.mock(C.class)
+    );
+
+
+    @Test
+    // setup mocks and test as needed
+}
+----
+
+== Factory Method
+
+[cols="30a,70a"]
+|===
+^|
+[plantuml,png]
+----
+@startuml
+skinparam dpi 180
+object A
+object B
+object C
+object D
+
+A-->B
+A-->C
+B-->D
+C-->D
+@enduml
+----
+
+|
+
+
+[source,java]
+----
+/*Move all the "wiring" from classes 
+to the factory method*/
+public class ApplicationFactory {
+
+  public static A createA() {
+     D d = new D();
+     B b = new B(d);
+     C c = new C(d);
+     A a = new A(b,c);
+     return a;
+  }
+}
+----
+|===
+
+
+== How it's done in DI ("dependency injection") frameworks
+
+[cols="30a,70a"]
+|===
+^|
+[plantuml,png]
+----
+@startuml
+skinparam dpi 180
+object A
+object B
+object C
+object D
+
+A-->B
+A-->C
+B-->D
+C-->D
+@enduml
+----
+
+|
+[source,java]
+----
+@Component
+class A {
+  private final B b;
+  private final C C;
+  public A(B b, C c) { this.b = b; this.c = c; }}
+
+@Component
+class B {
+  private final D d;
+  public B(D d) { this.d = d; }}
+
+@Component
+class C {
+  private final D d;
+  public C(D d) { this.d = d; }}
+
+A a = context.getBean(A.class);
+----
+|===
+
+
+== Factory method takeaways
+
+1. Do not make your classes responsible for creation of their dependencies. Let Factory Method do this job for them!
+2. Define dependencies as constructor parameters, save them in class member variables.
+3. This approach facilitates unit testing.
+4. Dependency Injection (DI) frameworks, such as Spring, provide automatic factory methods. 
+
+== Strategy: incapsulating a behaviour into an object
+
+[plantuml,strategy,png]
+----
+@startuml
+skinparam dpi 200
+class "Navigator" as N {
+    - routeStrategy
+    + buildRoute(A, B)
+}
+interface "RouteStrategy" as RS {
+    + buildRoute(A, B)
+}
+N *- RS
+class "Road\nStrategy" as RoadS {
+}
+class "PublicTransport\nStrategy" as PublicTS {
+}
+class "Walking\nStrategy" as WalkingS {
+}
+
+RS <|-- RoadS 
+RS <|-- PublicTS
+RS <|-- WalkingS 
+@enduml
+----
+
+== In Java, Strategy is often a lambda or a method reference
+
+[source,java]
+----
+class Calculator {
+    private final Function<Integer, Integer> taxStrategy;
+    Calculator(Function<Integer, Integer> taxCalculationStrategy) {
+        this.taxStrategy = taxCalculationStrategy;
+    }
+    Integer calculate(Integer amount) {
+        Integer surcharged = amount + 15;
+        return surcharged + taxStrategy.apply(surcharged);
+    }
+    public static void main(String[] args) {
+        System.out.println(new Calculator(
+                //Flat 20% strategy
+                amount -> amount / 5
+        ).calculate(100));
+    }
+}
+----
+
+== Comparator: another example of a strategy
+
+[source,java]
+----
+Collections.sort(people,
+  Comparator
+    .comparing(Person::getLastName)
+    .thenComparing(Person::getFirstName));
+);
+----
+
+== Strategy takeaways
+
+1. In object-oriented programming, an object not only encapsulates data: it can encapsulate behaviour as well!
+2. You can pass a Strategy as a parameter to a method or a generic algorithm.
+3. Lambdas and method references are syntactic constructions that make it easy to define strategies which consist of a single method only.
+
+== Command: Undo and Redo
+
+.Undo and Redo stacks of commands 
+image::undoredo.png[]
+
+== Command interface
+
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+
+interface Command {
+  execute()
+  undo()
+}
+
+class HiglightBluest
+class HiglightRandom
+class RemoveHighlighted
+
+Command <|--HiglightBluest
+Command <|--HiglightRandom
+Command <|--RemoveHighlighted
+
+@enduml
+----
+
+== Command takeaways
+
+1. Command object incapsulates the fact of invocation of some methods with some parameters.
+2. Using Command patterns, we can log user actions (e. g. for audit purposes or for replication of user actions across a distributed system), and implement Undo/Redo functionality.    
+
+== Visitor Pattern: A Practical Problem
+
+[cols="50a,50a"]
+|====
+| TAKE...
+| ...TRANSFORM INTO
+
+.^a|
+
+
+[graphviz, "something.png"]
+-----
+graph G {
+    graph [ dpi = 140 ];
+    layout="neato";
+    node [shape=circle,label=""];
+    0 -- 1;
+    0 -- 2;
+    1 -- 2;
+    1 -- 3;
+    3 -- 4;
+    2 -- 4;
+    4 -- 5;
+    5 -- 3;
+    5 -- 7;
+    4 -- 7;
+}
+-----
+
+.^a|
+
+* Code
+* Text
+* Visual representation
+* Result of calculation (number, vector, matrix...)
+|====
+
+== A very important specific case
+
+* Take AST (abstract synthax tree) of parsed code and 
+** *verify* the correctness of code (e. g. that all the variables are defined and all the types are compatible)
+** *compile* it into machine code
+** *execute* (interpret) the code without compilation
+
+== Naive approach: add methods to the class?
+
+[source,java]
+----
+Program program = Program.parse(....);
+//These are methods of class Program
+program.verify();
+program.compile();
+program.execute();
+----
+
+Drawback: too many responsibilities for `Program` class. Impossible to maintain and extend.
+
+== Separation of responisibilities: Visitor pattern
+
+[cols="50a,50a"]
+|====
+| *Data Structure*
+| *Visitor*
+| 
+* Keeps the data.
+* "Knows" how to traverse the data.
+* "Navigates" the visitor.
+| 
+* "Knows" how to transform the data.
+* Each visitor is responsible for one kind of transformations only, but we can define as many visitors as needed. 
+|====
+
+== Classes and their methods
+
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+
+class DataStructure {
+    -elements: Element[]
+    +accept(visitor: Visitor): void
+}
+
+interface Element {
+}
+
+DataStructure o-- "0..n" Element
+
+interface Visitor {
+    +visit(Element): void
+}
+
+@enduml
+----
+
+== Order of calling
+
+[plantuml]
+----
+@startuml
+skinparam dpi 180
+hide footbox
+participant Application
+participant DataStructure
+participant Visitor
+
+Application -> DataStructure : accept(Visitor)
+loop
+    DataStructure -> Visitor : visit(Element)
+end
+@enduml
+----
+
+== What is the simplest visitor pattern implementation?
+
+[source,java]
+----
+//This is the data structure
+Collection<T> collection = ...;
+
+//Consumer<? super T> parameter is the visitor
+collection.forEach (element -> {
+  //do anything with each element 
+})
+----
+
+[%fragment]
+* `accept(Visitor)` is `forEach(Consumer)`
+*  lambda (as an object) is the Visitor
+*  lambda's method is the Visitor's `visit`
+
+== Example: Let's implement a simple language
+
+[cols="40a,60a"]
+|===
+|
+
+image::calculator.jpg[]
+|
+PrimaryTerm::
+  * variable
+  * numeric literal
+
+UnaryOperation::
+  * unary -
+  * square root (`sqrt`)
+
+BinaryOperation::
+  * +, - (lower precedence)
+  * *, / (higher precedence)
+
+Parentheses::
+  * (, )
+
+|===
+
+  
+== Quadratic equation root formula
+
+[cols="50a,50a"]
+|===
+|
+
+[stem]
++++++
+\huge
+\frac {-b - \sqrt {b^2- 4ac}} {2 a}
++++++
+|
+In our "language":
+[source]
+(-b - sqrt(b * b - 4 * a * c)) / (2 * a)
+|===
+== Let's do two things
+
+[cols="50a,50a"]
+|===
+|Visualize
+|Calculate
+
+|
+[graphviz]
+-----
+digraph G {
+  1[label="b"];
+  2[label="-",shape=hexagon];
+  2 -> 1;
+  3[label="b"];
+  4[label="b"];
+  5[label="×",shape=box];
+  5 -> 3;
+  5 -> 4;
+  6[label="4"];
+  7[label="a"];
+  8[label="×",shape=box];
+  8 -> 6;
+  8 -> 7;
+  9[label="c"];
+  a[label="×",shape=box];
+  a -> 8;
+  a -> 9;
+  b[label="−",shape=box];
+  b -> 5;
+  b -> a;
+  c[label="√",shape=hexagon];
+  c -> b;
+  d[label="−",shape=box];
+  d -> 2;
+  d -> c;
+  e[label="2"];
+  f[label="a"];
+  g[label="×",shape=box];
+  g -> e;
+  g -> f;
+  h[label="÷",shape=box];
+  h -> d;
+  h -> g;
+}
+-----
+|
+Let's solve 
+
+stem:[x^2 + 2024x + 2023 = 0] 
+
+(Evaluate the formula for 
+stem:[a = 1, b = 2024, c = 2023]).
+|===
+
+== Evaluating the formula
+
+[stem]
++++++
+\huge
+\sqrt{9} + 1
++++++
+
+[cols="50a,50a"]
+|===
+|
+[graphviz]
+-----
+digraph G {
+ graph [ dpi = 140 ];
+ node [fontname = "Sans",style=filled,fillcolor="white"];
+1[label="9",fillcolor="yellow"];
+2[label="sqrt",shape=hexagon];
+2 -> 1;
+3[label="1"];
+4[label="+",shape=box];
+4 -> 2;
+4 -> 3;
+}
+-----
+|
+[graphviz]
+----
+digraph G {
+    graph [ dpi = 180 ];
+    node [fontname = "Sans",shape=plaintext];
+    array_elements [label=<
+        <table border="0" cellborder="1" cellspacing="0" cellpadding="10">
+            <tr><td>Stack:</td></tr>
+            <tr><td bgcolor="yellow">9</td></tr>
+        </table>
+    >];
+}
+----
+
+|===
+
+== Evaluating the formula
+
+[stem]
++++++
+\huge
+\sqrt{9} + 1
++++++
+
+
+[cols="50a,50a"]
+|===
+|
+[graphviz]
+-----
+digraph G {
+ graph [ dpi = 140 ];
+ node [fontname = "Sans",style=filled,fillcolor="white"];
+1[label="9"];
+2[label="sqrt",xlabel="3",fillcolor="yellow",shape=hexagon];
+2 -> 1;
+3[label="1"];
+4[label="+",shape=box];
+4 -> 2;
+4 -> 3;
+}
+-----
+|
+[graphviz]
+----
+digraph G {
+    graph [ dpi = 180 ];
+    node [fontname = "Sans",shape=plaintext];
+    array_elements [label=<
+        <table border="0" cellborder="1" cellspacing="0" cellpadding="10">
+            <tr><td>Stack:</td></tr>
+            <tr><td bgcolor="yellow">3</td></tr>
+        </table>
+    >];
+}
+----
+
+|===
+
+== Evaluating the formula
+
+[stem]
++++++
+\huge
+\sqrt{9} + 1
++++++
+
+
+[cols="50a,50a"]
+|===
+|
+[graphviz]
+-----
+digraph G {
+ graph [ dpi = 140 ];
+ node [fontname = "Sans",style=filled,fillcolor="white"];
+1[label="9"];
+2[label="sqrt",xlabel="3",fillcolor="yellow",shape=hexagon];
+2 -> 1;
+3[label="1"];
+4[label="+",shape=box];
+4 -> 2;
+4 -> 3;
+}
+-----
+|
+[graphviz]
+----
+digraph G {
+    graph [ dpi = 180 ];
+    node [fontname = "Sans",shape=plaintext];
+    array_elements [label=<
+        <table border="0" cellborder="1" cellspacing="0" cellpadding="10">
+            <tr><td>Stack:</td></tr>
+            <tr><td bgcolor="yellow">3</td></tr>
+        </table>
+    >];
+}
+----
+
+|===
+
+== Evaluating the formula
+
+[stem]
++++++
+\huge
+\sqrt{9} + 1
++++++
+
+
+[cols="50a,50a"]
+|===
+|
+[graphviz]
+-----
+digraph G {
+ graph [ dpi = 140 ];
+ node [fontname = "Sans",style=filled,fillcolor="white"];
+1[label="9"];
+2[label="sqrt",xlabel="3",shape=hexagon];
+2 -> 1;
+3[label="1",fillcolor="yellow"];
+4[label="+",shape=box];
+4 -> 2;
+4 -> 3;
+}
+-----
+|
+[graphviz]
+----
+digraph G {
+    graph [ dpi = 180 ];
+    node [fontname = "Sans",shape=plaintext];
+    array_elements [label=<
+        <table border="0" cellborder="1" cellspacing="0" cellpadding="10">
+            <tr><td>Stack:</td></tr>
+            <tr><td bgcolor="yellow">1</td></tr>
+            <tr><td>3</td></tr>
+        </table>
+    >];
+}
+----
+
+|===
+
+== Evaluating the formula
+
+[stem]
++++++
+\huge
+\sqrt{9} + 1
++++++
+
+
+[cols="50a,50a"]
+|===
+|
+[graphviz]
+-----
+digraph G {
+ graph [ dpi = 140 ];
+ node [fontname = "Sans",style=filled,fillcolor="white"];
+1[label="9"];
+2[label="sqrt",xlabel="3",shape=hexagon];
+2 -> 1;
+3[label="1"];
+4[label="+",shape=box,fillcolor="yellow",xlabel=4];
+4 -> 2;
+4 -> 3;
+}
+-----
+|
+[graphviz]
+----
+digraph G {
+    graph [ dpi = 180 ];
+    node [fontname = "Sans",shape=plaintext];
+    array_elements [label=<
+        <table border="0" cellborder="1" cellspacing="0" cellpadding="10">
+            <tr><td>Stack:</td></tr>
+            <tr><td bgcolor="yellow">4</td></tr>
+        </table>
+    >];
+}
+----
+
+|===
+
+
+== Warning
+
+* Do not use pattern matching outside of visitor pattern (as a substitute of polymorphism)
+
+[source,java]
+----
+/* It is better to have an abstract draw() method on Element class */
+switch (element) {
+    case Actor actor -> drawActor(actor);
+    case Arrow arrow -> drawArrow(arrow);
+    case UseCase useCase -> drawUseCase(useCase);
+}
+----
+
+== Takeaways (for Visitor)
+
+[%step]
+* Visitor pattern separates responsibilities between data structure and processor (visitor).
+* Data structure implements `accept(Visitor)`, visitor implements `visit(Element)`.
+* Depth-first traversal utilizing recursive calls on each of the elements of data structure is a common way to implement the pattern on the data structure side.
+* There can be multiple visitors implemented for different tasks.
