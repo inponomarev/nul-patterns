@@ -636,9 +636,9 @@ class HiglightBluest
 class HiglightRandom
 class RemoveHighlighted
 
-Command <|--HiglightBluest
-Command <|--HiglightRandom
-Command <|--RemoveHighlighted
+Command <|-- HiglightBluest
+Command <|-- HiglightRandom
+Command <|-- RemoveHighlighted
 
 @enduml
 ----
